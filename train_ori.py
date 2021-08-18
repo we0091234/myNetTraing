@@ -178,7 +178,7 @@ transform_val=cvTransforms.Compose([
 #            m.eval()
 
 
-trainset=dset.ImageFolder(r'H:\@pedestrain_datasets\@_pedestrain1\gender\resize',transform=transform_train)
+trainset=dset.ImageFolder(r'H:\@pedestrain_datasets\@_pedestrain1\gender\resize1',transform=transform_train)
 print(trainset[0][0])
 valset  =dset.ImageFolder(r'H:\daTUtest\zxc_st\Real_gender1\gender',transform=transform_val)
 print(len(valset))
