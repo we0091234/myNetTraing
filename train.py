@@ -11,8 +11,12 @@ import os
 import argparse
 import time
 from myNet import myNet
-from model.resnet import resnet101
-from dataset.DogCat import DogCat
+import cv2
+# from model.resnet import resnet101
+# from dataset.DogCat import DogCat
+def cv_imread(path):
+    img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
+    return img
 class Net(torch.nn.Module):
 	def __init__(self):
 		super(Net, self).__init__()
@@ -155,7 +159,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/cxl/pytorchTrain/trainData/@meanFile/VehicleDriverGeneral.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
@@ -202,7 +206,7 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 		loss=criterion(out,label)
 		loss.backward()
 		optimizer.step()
-		if batch_idx%200==0:
+		if batch_idx%10==0:
 			print("Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
@@ -222,27 +226,27 @@ def val(epoch,model,valloader):
 			correct+=predicted.data.eq(label.data).cpu().sum()
 	accuracy=1.0*correct.numpy()/total
 	print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"C:/train_data/isDriver/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/cxl/pytorchTrain/myNetTraing/model1/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 	# torch.save(model.state_dict(),exModelName)
 	torch.save({'cfg': myCfg, 'state_dict': model.state_dict()}, exModelName)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'C:\train_data\isDriver\train', transform=transform_train)
+	trainset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
 	print(trainset[0][0])
-	valset = dset.ImageFolder(r'C:\train_data\isDriver\val', transform=transform_val)
+	valset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
 	print(len(valset))
 	trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
 											  num_workers=opt.num_workers)
 	valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
 											num_workers=opt.num_workers)
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
-	model = myNet(num_classes=2,cfg=myCfg)
+	model = myNet(num_classes=3,cfg=myCfg)
 	model.cuda()
 	optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
 	# scheduler=StepLR(optimizer,step_size=20)
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(opt.nepoch))
 	# criterion=nn.CrossEntropyLoss()
-	criterion = CrossEntropyLabelSmooth(2)
+	criterion = CrossEntropyLabelSmooth(3)
 	criterion.cuda()
 
 	for epoch in range(opt.nepoch):
