@@ -42,12 +42,12 @@ class Category():
 parser=argparse.ArgumentParser()
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 # 'F:\@AttributeMean\@meanFile\pedestrainGlobal.npy'
-parser.add_argument('--meanfile',type=str,default=r'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy')
-parser.add_argument('--testfile',type=str,default=r'H:\@jiaojin\hongkangDriver\1_cls')
-parser.add_argument('--savefile',type=str,default=r'C:\train_data\isDriver\modelKd_pruned2\0126')
-parser.add_argument('--modelfile',type=str,default=r'C:\train_data\isDriver\modelKd_pruned2')
+parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy')
+parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val')
+parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model_kd1/result')
+parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model_kd1')
 parser.add_argument('--cfg',type=bool,default=True)
-parser.add_argument('--numclass',type=int,default=2)
+parser.add_argument('--numclass',type=int,default=3)
 parser.add_argument('--inputSize',type=int,default=128)
 parser.add_argument('--isParallel',type=bool,default=False)
 # parser.add_argument('--testfile',type=str,default='')
@@ -110,8 +110,8 @@ if not os.path.isfile(opt.modelfile):#not opt.modelfile.endswith("pth.tar"):
             checkPoint = torch.load(modeli)
             # # state_dict=checkPoint['state_dict']
             # model = myNet(num_classes=opt.numclass,cfg=cfg)
-            cfg = checkPoint["cfg"]
-            # cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
+            # cfg = checkPoint["cfg"]
+            cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
             model = myNet(num_classes=opt.numclass, cfg=cfg)
             model.load_state_dict(checkPoint['state_dict'])
                 # model =resnet50()
@@ -155,7 +155,7 @@ if not os.path.isfile(opt.modelfile):#not opt.modelfile.endswith("pth.tar"):
             folderName = os.path.join(toPath, str(predicted[0]))
             # if not os.path.exists(folderName):
             #     os.mkdir(folderName)
-            imageName = imgfile.split("\\")[-1]
+            imageName = imgfile.split("/")[-1]
             pos1=imageName.rfind(".")
             pos2=imageName.rfind("-")
             imageLabel = imageName[pos2+1:pos1]
@@ -197,8 +197,8 @@ if not os.path.isfile(opt.modelfile):#not opt.modelfile.endswith("pth.tar"):
             # if(i!=2):
             txtName+="{:.4f}_".format(allCat[i].rightRatio)
             print(i)
-        model_name =modeli[modeli.rfind("\\")+1:modeli.rfind(".")]
-        testFolderName = opt.testfile.split("\\")[-1]
+        model_name =modeli[modeli.rfind("/")+1:modeli.rfind(".")]
+        testFolderName = opt.testfile.split("/")[-1]
         txtName+=model_name+"_"+testFolderName+".txt"
         print(txtName)
         txtPath=os.path.join(opt.savefile,txtName)
@@ -218,8 +218,8 @@ elif opt.modelfile.endswith("pth.tar"):
 
     check_point=torch.load(opt.modelfile)
     if opt.cfg==True:
-        cfg=check_point["cfg"]
-        model = myNet(num_classes=opt.numclass,cfg=cfg)
+        # cfg=check_point["cfg"]
+        model = myNet(num_classes=opt.numclass)
     # model =resnet50()
     else:
         model=resnet18()
@@ -257,9 +257,9 @@ elif opt.modelfile.endswith("pth.tar"):
         predicted = predicted.data.cpu().numpy().tolist()
 
         folderName = os.path.join(toPath, str(predicted[0]))
-        if not os.path.exists(folderName):
-            os.mkdir(folderName)
-        imageName = imgfile.split("\\")[-1]
+        # if not os.path.exists(folderName):
+        #     os.mkdir(folderName)
+        imageName = imgfile.split("/")[-1]
         pos1 = imageName.rfind(".")
         pos2 = imageName.rfind("-")
         imageLabel = imageName[pos2 + 1:pos1]
@@ -313,8 +313,8 @@ elif opt.modelfile.endswith("pth.tar"):
         # if(i!=2):
         txtName += "{:.4f}_".format(allCat[i].rightRatio)
         print(i)
-    model_name = opt.modelfile[opt.modelfile.rfind("\\") + 1:opt.modelfile.rfind(".")]
-    testFolderName = opt.testfile.split("\\")[-1]
+    model_name = opt.modelfile[opt.modelfile.rfind("/") + 1:opt.modelfile.rfind(".")]
+    testFolderName = opt.testfile.split("/")[-1]
     txtName += model_name + "_" + testFolderName + ".txt"
     print(txtName)
     txtPath = os.path.join(opt.savefile, txtName)
@@ -379,7 +379,7 @@ elif opt.modelfile.endswith("pth"):
         folderName = os.path.join(toPath, str(predicted[0]))
         if not os.path.exists(folderName):
             os.mkdir(folderName)
-        imageName = imgfile.split("\\")[-1]
+        imageName = imgfile.split("/")[-1]
         pos1 = imageName.rfind(".")
         pos2 = imageName.rfind("-")
         imageLabel = imageName[pos2 + 1:pos1]
@@ -418,8 +418,8 @@ elif opt.modelfile.endswith("pth"):
         # if(i!=2):
         txtName += "{:.4f}_".format(allCat[i].rightRatio)
         print(i)
-    model_name = opt.modelfile[opt.modelfile.rfind("\\") + 1:opt.modelfile.rfind(".")]
-    testFolderName = opt.testfile.split("\\")[-1]
+    model_name = opt.modelfile[opt.modelfile.rfind("/") + 1:opt.modelfile.rfind(".")]
+    testFolderName = opt.testfile.split("/")[-1]
     txtName += model_name + "_" + testFolderName + ".txt"
     print(txtName)
     txtPath = os.path.join(opt.savefile, txtName)

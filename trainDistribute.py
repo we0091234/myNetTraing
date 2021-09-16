@@ -4,7 +4,7 @@ import random
 import shutil
 import time
 import warnings
-
+import cvtorchvision.cvtransforms as cvTransforms
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -18,6 +18,11 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from myNet import myNet
+import cv2
+import numpy as np
+def cv_imread(path):
+    img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
+    return img
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
@@ -26,7 +31,7 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data',
                     metavar='DIR',
-                    default='/home/cxl/pytorchTrain/trainData/DrivalCall/new',
+                    default='/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new',
                     help='path to dataset')
 parser.add_argument('-a',
                     '--arch',
@@ -84,7 +89,7 @@ parser.add_argument('--wd',
                     dest='weight_decay')
 parser.add_argument('-p',
                     '--print-freq',
-                    default=10,
+                    default=100,
                     type=int,
                     metavar='N',
                     help='print frequency (default: 10)')
@@ -137,7 +142,8 @@ def main_worker(local_rank, nprocs, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        # model = models.__dict__[args.arch]()
+        model = myNet(num_classes=3)
 
     torch.cuda.set_device(local_rank)
     model.cuda(local_rank)
@@ -157,43 +163,81 @@ def main_worker(local_rank, nprocs, args):
                                 weight_decay=args.weight_decay)
 
     cudnn.benchmark = True
+    
 
-    # Data loading code
-    traindir = os.path.join(args.data, 'train')
-    valdir = os.path.join(args.data, 'val')
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
 
-    train_dataset = datasets.ImageFolder(
-        traindir,
-        transforms.Compose([
-            transforms.RandomResizedCrop(128),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize,
-        ]))
+    MEAN_NPY = r'/home/xiaolei/train_data/data/datasets/trainData/@meanFile/VehicleDriverGeneral.npy'
+# 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
+    mean_npy = np.load(MEAN_NPY)
+    mean = mean_npy.mean(1).mean(1)
+    transform_train=cvTransforms.Compose([
+	cvTransforms.Resize((140,140)),
+	cvTransforms.RandomCrop((128,128)),
+	cvTransforms.RandomHorizontalFlip(), #镜像
+	cvTransforms.ToTensorNoDiv(), #caffe中训练没有除以255所以 不除以255
+	cvTransforms.NormalizeCaffe(mean)  #caffe只用减去均值
+    ])
+
+    transform_val=cvTransforms.Compose([
+        cvTransforms.Resize((128,128)),
+        cvTransforms.ToTensorNoDiv(),
+        cvTransforms.NormalizeCaffe(mean),
+    ])
+
+    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
+	# print(trainset[0][0])
+    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+
     train_sampler = torch.utils.data.distributed.DistributedSampler(
-        train_dataset)
-    train_loader = torch.utils.data.DataLoader(train_dataset,
+        trainset)
+    train_loader = torch.utils.data.DataLoader(trainset,
                                                batch_size=args.batch_size,
-                                               num_workers=2,
+                                               num_workers=4,
                                                pin_memory=True,
                                                sampler=train_sampler)
-
-    val_dataset = datasets.ImageFolder(
-        valdir,
-        transforms.Compose([
-            transforms.Resize(140),
-            transforms.CenterCrop(128),
-            transforms.ToTensor(),
-            normalize,
-        ]))
-    val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
-    val_loader = torch.utils.data.DataLoader(val_dataset,
+    val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
+    val_loader = torch.utils.data.DataLoader(valset,
                                              batch_size=args.batch_size,
-                                             num_workers=2,
+                                             num_workers=4,
                                              pin_memory=True,
-                                             sampler=val_sampler)
+                                             sampler=val_sampler)                                           
+
+    # Data loading code
+    # traindir = os.path.join(args.data, 'train')
+    # valdir = os.path.join(args.data, 'val')
+    # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                                  std=[0.229, 0.224, 0.225])
+
+    # train_dataset = datasets.ImageFolder(
+    #     traindir,
+    #     transforms.Compose([
+    #         transforms.RandomResizedCrop(128),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    # train_sampler = torch.utils.data.distributed.DistributedSampler(
+    #     train_dataset)
+    # train_loader = torch.utils.data.DataLoader(train_dataset,
+    #                                            batch_size=args.batch_size,
+    #                                            num_workers=2,
+    #                                            pin_memory=True,
+    #                                            sampler=train_sampler)
+
+    # val_dataset = datasets.ImageFolder(
+    #     valdir,
+    #     transforms.Compose([
+    #         transforms.Resize(140),
+    #         transforms.CenterCrop(128),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    # val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
+    # val_loader = torch.utils.data.DataLoader(val_dataset,
+    #                                          batch_size=args.batch_size,
+    #                                          num_workers=2,
+    #                                          pin_memory=True,
+    #                                          sampler=val_sampler)
 
     if args.evaluate:
         validate(val_loader, model, criterion, local_rank, args)
@@ -215,7 +259,7 @@ def main_worker(local_rank, nprocs, args):
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
-
+        fileName = "/home/xiaolei/train_data/myNetTraing/model/"+"_"+str(acc1)+"_"+str(epoch)+".pth.tar"
         if args.local_rank == 0:
             save_checkpoint(
                 {
@@ -223,7 +267,7 @@ def main_worker(local_rank, nprocs, args):
                     'arch': args.arch,
                     'state_dict': model.module.state_dict(),
                     'best_acc1': best_acc1,
-                }, is_best)
+                }, is_best,fileName)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, local_rank, args):
@@ -326,7 +370,7 @@ def validate(val_loader, model, criterion, local_rank, args):
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
+    torch.save(state, filename,_use_new_zipfile_serialization=False)
     if is_best:
         shutil.copyfile(filename, 'model_best.pth.tar')
 

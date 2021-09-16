@@ -154,13 +154,21 @@ parser.add_argument('--batchSize',type=int,default=128)
 parser.add_argument('--nepoch',type=int,default=120)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
+parser.add_argument('--local_rank', default=-1, type=int,
+                    help='node rank for distributed training')
+
 opt=parser.parse_args()
+
+dist.init_process_group(backend='nccl',init_method='tcp://192.168.1.201:2000', rank=opt.local_rank, world_size=4)
+
+torch.cuda.set_device(opt.local_rank)
+word_size= torch.distributed.get_world_size()
 # print(opt)
-os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
+# os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'/home/cxl/pytorchTrain/trainData/@meanFile/VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
@@ -189,9 +197,9 @@ transform_val=cvTransforms.Compose([
 
 
 def train(epoch,scheduler,model,trainloader,criterion,optimizer):
-	print('\nEpoch: %d' % epoch)
+	
 	scheduler.step()
-	print(scheduler.get_lr())
+	# print(scheduler.get_lr())
 	model.train()
 	# model.apply(fix_bn)
 
@@ -207,13 +215,14 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 		loss=criterion(out,label)
 		loss.backward()
 		optimizer.step()
-		if batch_idx%10==0:
-			print("Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
+		if opt.local_rank % word_size == 0:
+			if batch_idx%10==0:
+				print("train Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
 	# torch.save(model.state_dict(),exModelName)
 def val(epoch,model,valloader):
-	print("\nValidation Epoch: %d" %epoch)
+	
 	model.eval()
 	total=0
 	correct=0
@@ -226,33 +235,53 @@ def val(epoch,model,valloader):
 			total+=image.size(0)
 			correct+=predicted.data.eq(label.data).cpu().sum()
 	accuracy=1.0*correct.numpy()/total
-	print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"/home/cxl/pytorchTrain/myNetTraing/model1/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
-	# torch.save(model.state_dict(),exModelName)
-	torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName)
+	if opt.local_rank % word_size == 0:
+		print("\nValidation Epoch: %d" %epoch)
+		print("Acc: %f "% ((1.0*correct.numpy())/total))
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		# torch.save(model.state_dict(),exModelName)
+		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
-	print(trainset[0][0])
-	valset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
-	print(len(valset))
-	trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
-											  num_workers=opt.num_workers)
-	valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
-											num_workers=opt.num_workers)
-	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
+	trainset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
+	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
+	valset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+	val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
+	# print(len(valset))
+	train_loader = torch.utils.data.DataLoader(trainset,
+                                               batch_size=opt.batchSize,
+                                               num_workers=4,
+                                               pin_memory=True,
+                                               sampler=train_sampler)
+	# trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
+	# 										  num_workers=opt.num_workers)
+	# valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
+	# 										num_workers=opt.num_workers)
+	val_loader = torch.utils.data.DataLoader(valset,
+                                             batch_size=opt.batchSize,
+                                             num_workers=4,
+                                             pin_memory=True,
+                                             sampler=val_sampler)     
+	pretrained = torch.load("./model/result/0.880952_epoth_65_model.pth.tar")
+	pretrainedDict = pretrained['state_dict']
 
-	
+	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
 	model = myNet(num_classes=3,cfg=myCfg)
-	model.cuda()
+   
+
+	model.load_state_dict(pretrainedDict)
+	
+	model.cuda(opt.local_rank)
+	model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[opt.local_rank])
+	# model.cuda()
 	optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
 	# scheduler=StepLR(optimizer,step_size=20)
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(opt.nepoch))
 	# criterion=nn.CrossEntropyLoss()
 	criterion = CrossEntropyLabelSmooth(3)
-	criterion.cuda()
+	criterion.cuda(opt.local_rank)
 
 	for epoch in range(opt.nepoch):
-		train(epoch,scheduler,model,trainloader,criterion,optimizer)
-		val(epoch,model,valloader)
+		train(epoch,scheduler,model,train_loader,criterion,optimizer)
+		val(epoch,model,val_loader)
 
