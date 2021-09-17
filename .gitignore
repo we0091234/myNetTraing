@@ -12,6 +12,5 @@ build/
 !*.h
 !*.hpp
 !*.c
-!*.txt
 !.gitignore
 !*.py

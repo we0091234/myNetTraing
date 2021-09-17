@@ -43,11 +43,11 @@ parser=argparse.ArgumentParser()
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 # 'F:\@AttributeMean\@meanFile\pedestrainGlobal.npy'
 parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy')
-parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val')
-parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model_kd1/result')
-parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model_kd1')
+parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val')
+parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model/result')
+parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model/')
 parser.add_argument('--cfg',type=bool,default=True)
-parser.add_argument('--numclass',type=int,default=3)
+parser.add_argument('--numclass',type=int,default=2)
 parser.add_argument('--inputSize',type=int,default=128)
 parser.add_argument('--isParallel',type=bool,default=False)
 # parser.add_argument('--testfile',type=str,default='')
@@ -107,11 +107,14 @@ if not os.path.isfile(opt.modelfile):#not opt.modelfile.endswith("pth.tar"):
             OneCat = Category()
             allCat.append(OneCat)
         if modeli.endswith("pth.tar"):
-            checkPoint = torch.load(modeli)
+            try:
+                checkPoint = torch.load(modeli)
+            except:
+                continue
             # # state_dict=checkPoint['state_dict']
             # model = myNet(num_classes=opt.numclass,cfg=cfg)
-            # cfg = checkPoint["cfg"]
-            cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
+            cfg = checkPoint["cfg"]
+            # cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
             model = myNet(num_classes=opt.numclass, cfg=cfg)
             model.load_state_dict(checkPoint['state_dict'])
                 # model =resnet50()

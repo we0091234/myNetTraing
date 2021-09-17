@@ -149,9 +149,9 @@ def val(epoch):
 	accuracy=1.0*correct.numpy()/total
 	test_loss /= len(valloader.dataset)
 	print("testAcc: %f testLoss:%f"% ((1.0*correct.numpy())/total,test_loss))
-	exModelName = r"C:/train_data/isDriver/0_num_F/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 	# torch.save(model.state_dict(),exModelName)
-	torch.save({'cfg': Stcfg, 'state_dict': model.state_dict()}, exModelName)
+	torch.save({'cfg': Stcfg, 'state_dict': model.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 # with open("new1.txt","w") as pf:
 # 	for k,v in pretrained_dict.items():
@@ -174,9 +174,9 @@ def val(epoch):
 
 if __name__=='__main__':
         parser = argparse.ArgumentParser()
-        parser.add_argument('--numClasses', type=int, default=2)
-        parser.add_argument('--num_workers', type=int, default=0)
-        parser.add_argument('--batchSize', type=int, default=128)
+        parser.add_argument('--numClasses', type=int, default=3)
+        parser.add_argument('--num_workers', type=int, default=4)
+        parser.add_argument('--batchSize', type=int, default=512)
         parser.add_argument('--nepoch', type=int, default=120)
         parser.add_argument('--lr', type=float, default=0.025)
         parser.add_argument('--gpu', type=str, default='0')
@@ -184,13 +184,13 @@ if __name__=='__main__':
         print(opt)
         cfg= [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
         cfgGender = [32, 'M', 64, 'M', 76, 'M', 92, 'M', 28, 'M', 112]
-        os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
+        # os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
         device = torch.device("cuda")
         torch.backends.cudnn.benchmark = True
         # MEAN_NPY = r'F:\@AttributeMean\@meanFile\PedestrainGlobal.npy'
         # MEAN_NPY = r"F:\@Pedestrain_attribute\@_pedestrain2\NoStdVehicle.npy"
         # MEAN_NPY = r"F:\NostdAttribute\NS_handCar\NoStdVehicle.npy"
-        MEAN_NPY ='G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
+        MEAN_NPY ='/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
         mean_npy = np.load(MEAN_NPY)
         mean = mean_npy.mean(1).mean(1)
         transform_train = cvTransforms.Compose([
@@ -207,10 +207,10 @@ if __name__=='__main__':
             cvTransforms.NormalizeCaffe(mean),
         ])
         # modelPath = r"F:\Driver\DrivalBeltViolation\pruned102\0.977084_epoth_75_model.pth.tar"
-        modelPath = r"L:\trainTemp\PdestrainGlobal\9_haveBaby\model\0.905263_epoth_29_model.pth.tar"
+        modelPath = r"/home/xiaolei/train_data/myNetTraing/model_kd/0.969970_epoth_44_model.pth.tar"
         # modelPath=r"D:\trainTemp\Driver\selfBelt\model_kd_109_3\0.913701_epoth_74_model.pth.tar"
         # modelPath=r"D:\trainTemp\Driver\selfBelt\0.906387_epoth_135_model.pth.tar"
-        StmodelPath=r"L:\trainTemp\PdestrainGlobal\9_haveBaby\haveBaby_ori.pth.tar"
+        StmodelPath=r"/home/xiaolei/train_data/myNetTraing/model_kd/0.969970_epoth_44_model.pth.tar"
         # StmodelPath= r"D:\trainTemp\Driver\selfBelt\kdViolation4_71\0.930765_epoth_71_model.pth.tar"
         checkPoint = torch.load(modelPath)
         cfg = checkPoint["cfg"]
@@ -227,15 +227,16 @@ if __name__=='__main__':
         model = myNet(num_classes=opt.numClasses, cfg=Stcfg)
         model_dict = StcheckPoint['state_dict']
         model.load_state_dict(model_dict)
-        # trainset = dset.ImageFolder(r'C:\train_data\isDriver\train', transform=transform_train,
-        #                             loader=cv_imread)
-        trainset=MyDataSets(r"C:\train_data\isDriver\label.txt",transform=transform_train)
+        trainset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,
+                                    loader=cv_imread)
+        # trainset=MyDataSets(r"C:\train_data\isDriver\label.txt",transform=transform_train)
         print(trainset[0][0])
-        valset = dset.ImageFolder(r'C:\train_data\isDriver\val', transform=transform_val, loader=cv_imread)
+        valset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val, loader=cv_imread)
         print(len(valset))
         trainloader=torch.utils.data.DataLoader(trainset,batch_size=opt.batchSize,shuffle=True,num_workers=opt.num_workers)
         valloader=torch.utils.data.DataLoader(valset,batch_size=opt.batchSize,shuffle=False,num_workers=opt.num_workers)	# model=myNet(num_classes=3)
         model.cuda()
+        model = nn.DataParallel(model, device_ids=[0,1,2,3], output_device=0)
         name_list =['feature.0.weight','feature.0.bias','feature.1.weight','feature.1.bias','feature.4.weight','feature.4.bias','feature.5.weight','feature.5.bias']    #list中为需要冻结的网络层
         for name, value in model.named_parameters():
         	if name in name_list:

@@ -150,8 +150,8 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--num_workers',type=int,default=4)
-parser.add_argument('--batchSize',type=int,default=128)
-parser.add_argument('--nepoch',type=int,default=120)
+parser.add_argument('--batchSize',type=int,default=512)
+parser.add_argument('--nepoch',type=int,default=60)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
 parser.add_argument('--local_rank', default=-1, type=int,
@@ -168,7 +168,7 @@ word_size= torch.distributed.get_world_size()
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
@@ -238,14 +238,14 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-		exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
-		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName)
+	torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
+	trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1', transform=transform_train,loader=cv_imread)
 	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
-	valset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val,loader=cv_imread)
 	val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
 	# print(len(valset))
 	train_loader = torch.utils.data.DataLoader(trainset,
@@ -262,15 +262,15 @@ if __name__ == '__main__':
                                              num_workers=4,
                                              pin_memory=True,
                                              sampler=val_sampler)     
-	pretrained = torch.load("./model/result/0.880952_epoth_65_model.pth.tar")
-	pretrainedDict = pretrained['state_dict']
+	# pretrained = torch.load("./model/result/0.880952_epoth_65_model.pth.tar")
+	# pretrainedDict = pretrained['state_dict']
 
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
-	model = myNet(num_classes=3,cfg=myCfg)
+	model = myNet(num_classes=2,cfg=myCfg)
    
 
-	model.load_state_dict(pretrainedDict)
-	
+	# model.load_state_dict(pretrainedDict)
+
 	model.cuda(opt.local_rank)
 	model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[opt.local_rank])
 	# model.cuda()
@@ -278,7 +278,7 @@ if __name__ == '__main__':
 	# scheduler=StepLR(optimizer,step_size=20)
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(opt.nepoch))
 	# criterion=nn.CrossEntropyLoss()
-	criterion = CrossEntropyLabelSmooth(3)
+	criterion = CrossEntropyLabelSmooth(2)
 	criterion.cuda(opt.local_rank)
 
 	for epoch in range(opt.nepoch):
