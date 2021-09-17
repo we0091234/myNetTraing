@@ -47,7 +47,7 @@ parser.add_argument('-j',
                     metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs',
-                    default=90,
+                    default=60,
                     type=int,
                     metavar='N',
                     help='number of total epochs to run')
@@ -66,7 +66,7 @@ parser.add_argument('-b',
                     'using Data Parallel or Distributed Data Parallel')
 parser.add_argument('--lr',
                     '--learning-rate',
-                    default=0.1,
+                    default=0.025,
                     type=float,
                     metavar='LR',
                     help='initial learning rate',
@@ -166,7 +166,7 @@ def main_worker(local_rank, nprocs, args):
     
 
 
-    MEAN_NPY = r'/home/xiaolei/train_data/data/datasets/trainData/@meanFile/VehicleDriverGeneral.npy'
+    MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
     mean_npy = np.load(MEAN_NPY)
     mean = mean_npy.mean(1).mean(1)
@@ -184,9 +184,9 @@ def main_worker(local_rank, nprocs, args):
         cvTransforms.NormalizeCaffe(mean),
     ])
 
-    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
+    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1', transform=transform_train,loader=cv_imread)
 	# print(trainset[0][0])
-    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val,loader=cv_imread)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         trainset)
@@ -418,7 +418,7 @@ class ProgressMeter(object):
 
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr * (0.1**(epoch // 30))
+    lr = args.lr * (0.1**(epoch // 20))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 

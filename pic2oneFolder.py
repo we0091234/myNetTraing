@@ -9,9 +9,9 @@ def allFilePath(rootPath,allFIleList):
         else:
             allFilePath(os.path.join(rootPath,temp),allFIleList)
 
-fileFolder = r"/home/cxl/pytorchTrain/trainData/DrivalCall/train/2"
+fileFolder = r"/home/xiaolei/ramdisk/gender/train1/1"
 # fileFolder = r"/home/xiaolei/train_data/HarzoneData/trianRar/"
-saveFolder = r"/home/cxl/pytorchTrain/trainData/DrivalCall/newTrain/2"
+saveFolder = r"/home/xiaolei/ramdisk/gender/oneFolder/1"
 
 fileList =[]
 
@@ -30,7 +30,7 @@ for file in fileList:
             # print(file,newPicPath)
             # print(txtPath,newTxtPath)
             print(ic,file)
-            shutil.copy(file,newPicPath)
+            shutil.move(file,newPicPath)
             # shutil.copy(txtPath,newTxtPath)
 
 

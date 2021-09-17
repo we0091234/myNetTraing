@@ -186,10 +186,10 @@ def val(epoch):
 
 if __name__=='__main__':
         parser = argparse.ArgumentParser()
-        parser.add_argument('--numClasses', type=int, default=3)
-        parser.add_argument('--num_workers', type=int, default=4)
-        parser.add_argument('--batchSize', type=int, default=256)
-        parser.add_argument('--nepoch', type=int, default=120)
+        parser.add_argument('--numClasses', type=int, default=2)
+        parser.add_argument('--num_workers', type=int, default=8)
+        parser.add_argument('--batchSize', type=int, default=512)
+        parser.add_argument('--nepoch', type=int, default=60)
         parser.add_argument('--lr', type=float, default=0.025)
         parser.add_argument('--gpu', type=str, default='0 1 2 3')
         parser.add_argument('--local_rank', default=-1, type=int,
@@ -208,7 +208,7 @@ if __name__=='__main__':
         # MEAN_NPY = r'F:\@AttributeMean\@meanFile\PedestrainGlobal.npy'
         # MEAN_NPY = r"F:\@Pedestrain_attribute\@_pedestrain2\NoStdVehicle.npy"
         # MEAN_NPY = r"F:\NostdAttribute\NS_handCar\NoStdVehicle.npy"
-        MEAN_NPY ='/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
+        MEAN_NPY ='/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy'
         mean_npy = np.load(MEAN_NPY)
         mean = mean_npy.mean(1).mean(1)
         transform_train = cvTransforms.Compose([
@@ -225,10 +225,10 @@ if __name__=='__main__':
             cvTransforms.NormalizeCaffe(mean),
         ])
         # modelPath = r"F:\Driver\DrivalBeltViolation\pruned102\0.977084_epoth_75_model.pth.tar"
-        modelPath = r"/home/xiaolei/train_data/myNetTraing/model_kd/0.969970_epoth_44_model.pth.tar"
+        modelPath = r"/home/xiaolei/train_data/myNetTraing/model/0.528369_epoth_59_model.pth.tar"
         # modelPath=r"D:\trainTemp\Driver\selfBelt\model_kd_109_3\0.913701_epoth_74_model.pth.tar"
         # modelPath=r"D:\trainTemp\Driver\selfBelt\0.906387_epoth_135_model.pth.tar"
-        StmodelPath=r"/home/xiaolei/train_data/myNetTraing/model_kd/0.969970_epoth_44_model.pth.tar"
+        StmodelPath=r"/home/xiaolei/train_data/myNetTraing/model/0.528369_epoth_59_model.pth.tar"
         # StmodelPath= r"D:\trainTemp\Driver\selfBelt\kdViolation4_71\0.930765_epoth_71_model.pth.tar"
         checkPoint = torch.load(modelPath)
         cfg = checkPoint["cfg"]
@@ -245,12 +245,12 @@ if __name__=='__main__':
         model = myNet(num_classes=opt.numClasses, cfg=Stcfg)
         model_dict = StcheckPoint['state_dict']
         model.load_state_dict(model_dict)
-        trainset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/train', transform=transform_train,
+        trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1', transform=transform_train,
                                     loader=cv_imread)
         train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
         # trainset=MyDataSets(r"C:\train_data\isDriver\label.txt",transform=transform_train)
         print(trainset[0][0])
-        valset = dset.ImageFolder(r'/home/xiaolei/train_data/data/datasets/trainData/DrivalCall/new/val', transform=transform_val, loader=cv_imread)
+        valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val, loader=cv_imread)
         val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
         print(len(valset))
 

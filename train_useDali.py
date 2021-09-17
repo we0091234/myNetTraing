@@ -58,10 +58,11 @@ class HybridTrainPipe(Pipeline):
                                             output_layout=types.NCHW,
                                             crop=(crop, crop),
                                             image_type=types.BGR,
-                                            # mean=[99.95327338, 96.27925874, 86.54154894],
-                                            # std=[1,1,1]
-											 mean=[0.485 * 255,0.456 * 255,0.406 * 255],
-                                            std=[0.229 * 255,0.224 * 255,0.225 * 255])
+                                            mean=[102.61518568033352, 101.82123008091003, 107.42755172448233],
+                                            std=[1,1,1]
+											#   mean=mean,
+                                            # std=[1,1,1])
+		)
         self.coin = ops.CoinFlip(probability=0.5)
         print('DALI "{0}" variant'.format(dali_device))
 
@@ -95,8 +96,8 @@ class HybridValPipe(Pipeline):
                                             output_layout=types.NCHW,
                                             crop=(crop, crop),
                                             image_type=types.BGR,
-                                             mean=[0.485 * 255,0.456 * 255,0.406 * 255],
-                                            std=[0.229 * 255,0.224 * 255,0.225 * 255])
+                                             mean=mean,
+                                            std=[1,1,1])
 
     def define_graph(self):
         self.jpegs, self.labels = self.input(name="Reader")
@@ -138,7 +139,7 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--num_workers',type=int,default=4)
-parser.add_argument('--batchSize',type=int,default=128)
+parser.add_argument('--batchSize',type=int,default=1024)
 parser.add_argument('--nepoch',type=int,default=120)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
@@ -148,7 +149,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'/home/cxl/pytorchTrain/trainData/@meanFile/VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
@@ -164,7 +165,7 @@ transform_train=cvTransforms.Compose([
 transform_val=cvTransforms.Compose([
 	cvTransforms.Resize((128,128)),
 	cvTransforms.ToTensorNoDiv(),
-	cvTransforms.NormalizeCaffe(mean),
+	cvTransforms.NormalizeCaffe( [102.61518568033352, 101.82123008091003, 107.42755172448233]),
 ])
 
 # def fix_bn(m):
@@ -185,7 +186,7 @@ def train(epoch,scheduler,model,train_loader,criterion,optimizer):
 	# model.apply(fix_bn)
 
 	# time_start = time.time()
-	train_loader_len = int(math.ceil(train_loader._size / 32))
+	train_loader_len = int(math.ceil(train_loader._size / 512))
 	# tmp = list(enumerate(train_loader))
 	# tmp = list(enumerate(train_loader))
 	for batch_idx, data in enumerate(train_loader):
@@ -203,8 +204,8 @@ def train(epoch,scheduler,model,train_loader,criterion,optimizer):
 		loss=criterion(out,label)
 		loss.backward()
 		optimizer.step()
-		if batch_idx%10==0:
-			print("Epoch:%d [%d] loss:%f lr:%s" %(epoch,batch_idx,loss.mean(),scheduler.get_lr()))
+		if batch_idx%100==0:
+			print("Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,train_loader_len,loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
 	# torch.save(model.state_dict(),exModelName)
@@ -214,27 +215,27 @@ def val(epoch,model,valloader):
 	total=0
 	correct=0
 	with torch.no_grad():
-		for batch_idx,data in enumerate(valloader):
-			image = data[0]["data"]
-			label = data[0]["label"].squeeze().cuda().long()
-			# image=Variable(img.cuda())
-			# label=Variable(label.cuda())
+		for batch_idx,(img,label) in enumerate(valloader):
+			# image = data[0]["data"]
+			# label = data[0]["label"].squeeze().cuda().long()
+			image=Variable(img.cuda())
+			label=Variable(label.cuda())
 			out=model(image)
 			_,predicted=torch.max(out.data,1)
 			total+=image.size(0)
 			correct+=predicted.data.eq(label.data).cpu().sum()
 	accuracy=1.0*correct.numpy()/total
 	print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"/home/cxl/pytorchTrain/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/xiaolei/train_data/myNetTraing/model_driver/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 	# torch.save(model.state_dict(),exModelName)
 	torch.save({'cfg': myCfg, 'state_dict': model.state_dict()}, exModelName)
 
 if __name__ == '__main__':
 
-	pipe = HybridTrainPipe(batch_size=128,
+	pipe = HybridTrainPipe(batch_size=512,
 							num_threads=4,
 							device_id=0,
-							data_dir='/home/cxl/pytorchTrain/trainData/DrivalCall/new/train',
+							data_dir='/home/xiaolei/ramdisk/gender/oneFolder',
 							crop=128,
 							dali_cpu=False,
 							shard_id=0,
@@ -258,23 +259,23 @@ if __name__ == '__main__':
 	# val_loader = DALIClassificationIterator(pipe, reader_name="Reader", last_batch_policy=LastBatchPolicy.PARTIAL)
 	# trainset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/train', transform=transform_train,loader=cv_imread)
 	# print(trainset[0][0])
-	# valset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+	valset = dset.ImageFolder(r'/home/xiaolei/ramdisk/gender/val/0', transform=transform_val,loader=cv_imread)
 	# # print(len(valset))
 	# # trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
 	# # 										  num_workers=opt.num_workers)
-	# valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
-	# 										num_workers=opt.num_workers)
+	valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
+											num_workers=opt.num_workers)
 
-	pipe = HybridValPipe(batch_size=32,
-							num_threads=4,
-							device_id=0,
-							data_dir="/home/cxl/pytorchTrain/trainData/DrivalCall/new/val",
-							crop=128,
-							size=128,
-							shard_id=0,
-							num_shards=1)
-	pipe.build()
-	val_loader = DALIClassificationIterator(pipe, reader_name="Reader", fill_last_batch=False)
+	# pipe = HybridValPipe(batch_size=32,
+	# 						num_threads=4,
+	# 						device_id=0,
+	# 						data_dir="/home/cxl/pytorchTrain/trainData/DrivalCall/new/val",
+	# 						crop=128,
+	# 						size=128,
+	# 						shard_id=0,
+	# 						num_shards=1)
+	# pipe.build()
+	# val_loader = DALIClassificationIterator(pipe, reader_name="Reader", fill_last_batch=False)
 
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
 	model = myNet(num_classes=3,cfg=myCfg)
@@ -289,7 +290,7 @@ if __name__ == '__main__':
 	for epoch in range(opt.nepoch):
 		train(epoch,scheduler,model,train_loader,criterion,optimizer)
 		
-		val(epoch,model,val_loader)
+		val(epoch,model,valloader)
 		train_loader.reset()
-		val_loader.reset()
+		# val_loader.reset()
 

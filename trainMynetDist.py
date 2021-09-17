@@ -208,8 +208,8 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 	for batch_idx,(img,label) in enumerate(trainloader):
 		# time_end = time.time()
 		# print('totally cost', time_end - time_start)
-		image=Variable(img.cuda())
-		label=Variable(label.cuda())
+		image=img.cuda(opt.local_rank, non_blocking=True)
+		label=label.cuda(opt.local_rank, non_blocking=True)
 		optimizer.zero_grad()
 		out=model(image)
 		loss=criterion(out,label)
@@ -228,8 +228,8 @@ def val(epoch,model,valloader):
 	correct=0
 	with torch.no_grad():
 		for batch_idx,(img,label) in enumerate(valloader):
-			image=Variable(img.cuda())
-			label=Variable(label.cuda())
+			image=img.cuda(opt.local_rank, non_blocking=True)
+			label=label.cuda(opt.local_rank, non_blocking=True)
 			out=model(image)
 			_,predicted=torch.max(out.data,1)
 			total+=image.size(0)
