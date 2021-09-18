@@ -238,12 +238,12 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
-	torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
+		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1', transform=transform_train,loader=cv_imread)
+	trainset = dset.ImageFolder(r'/home/xiaolei/ramdisk/gender/resizePic', transform=transform_train,loader=cv_imread)
 	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
 	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val,loader=cv_imread)
 	val_sampler = torch.utils.data.distributed.DistributedSampler(valset)

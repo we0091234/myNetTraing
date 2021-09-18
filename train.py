@@ -13,6 +13,14 @@ import argparse
 import time
 from myNet import myNet
 import cv2
+from torch.utils.data import DataLoader
+from prefetch_generator import BackgroundGenerator
+from img2lmdb import ImageFolderLMDB
+class DataLoaderX(DataLoader):
+
+    def __iter__(self):
+        return BackgroundGenerator(super().__iter__())
+
 # from model.resnet import resnet101
 # from dataset.DogCat import DogCat
 def cv_imread(path):
@@ -150,8 +158,8 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--num_workers',type=int,default=4)
-parser.add_argument('--batchSize',type=int,default=128)
-parser.add_argument('--nepoch',type=int,default=120)
+parser.add_argument('--batchSize',type=int,default=256)
+parser.add_argument('--nepoch',type=int,default=60)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
 opt=parser.parse_args()
@@ -160,12 +168,12 @@ os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'/home/cxl/pytorchTrain/trainData/@meanFile/VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
 transform_train=cvTransforms.Compose([
-	cvTransforms.Resize((140,140)),
+	# cvTransforms.Resize((140,140)),
 	cvTransforms.RandomCrop((128,128)),
 	cvTransforms.RandomHorizontalFlip(), #镜像
 	cvTransforms.ToTensorNoDiv(), #caffe中训练没有除以255所以 不除以255
@@ -227,19 +235,23 @@ def val(epoch,model,valloader):
 			correct+=predicted.data.eq(label.data).cpu().sum()
 	accuracy=1.0*correct.numpy()/total
 	print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"/home/cxl/pytorchTrain/myNetTraing/model1/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/DriverCallLmdb/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 	# torch.save(model.state_dict(),exModelName)
-	torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName)
+	torch.save({'cfg': myCfg, 'state_dict': model.state_dict()}, exModelName)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/train', transform=transform_train,loader=cv_imread)
+	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train.lmdb", transform=transform_train)
+	# trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train', transform=transform_train,loader=cv_imread)
 	print(trainset[0][0])
-	valset = dset.ImageFolder(r'/home/cxl/pytorchTrain/trainData/DrivalCall/new/val', transform=transform_val,loader=cv_imread)
+	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/val', transform=transform_val,loader=cv_imread)
 	print(len(valset))
-	trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
-											  num_workers=opt.num_workers)
-	valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
-											num_workers=opt.num_workers)
+	# trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
+	# 										  num_workers=opt.num_workers)
+	trainloader = DataLoaderX(trainset, batch_size=opt.batchSize, shuffle=True,
+	num_workers=opt.num_workers)
+	# valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
+	# 										num_workers=opt.num_workers)
+	valloader = DataLoaderX(valset, batch_size=opt.batchSize, shuffle=False,num_workers=opt.num_workers)
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
 
 	

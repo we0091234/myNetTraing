@@ -2,8 +2,8 @@
 import os
 import cv2
 import numpy as np
-path1=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1/0'
-path2=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/resizePic/0'
+path1=r'/home/xiaolei/ramdisk/gender/oneFolder/1'
+path2=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/resizePic/1'
 filelist1=os.listdir(path1)
 def allFilePath(rootPath,allFIleList):
     fileList = os.listdir(rootPath)
