@@ -134,7 +134,7 @@ def dumps_pyarrow(obj):
     return pa.serialize(obj).to_buffer()
 
 
-def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency=1000):
+def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency=1000,resizeState=True):
     all_imgpath = []
     all_idxs = []
     directory = dpath
@@ -143,7 +143,10 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
     ###adddd
     print(len(dataset))
     imgori,_,_=dataset[0]
-    imgoriSize = cv2.resize(imgori, (width, height), interpolation=cv2.INTER_LINEAR).nbytes
+    if(resizeState==False):
+        imgoriSize = imgori.nbytes
+    else:
+        imgoriSize = cv2.resize(imgori, (width, height), interpolation=cv2.INTER_LINEAR).nbytes
     data_size = imgoriSize * len(dataset)
     ######ddddd
     data_loader = DataLoader(dataset, num_workers=4, collate_fn=lambda x: x)
@@ -161,7 +164,8 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
         # image, label = data[0]
         image, label, imgpath = data[0]
         ####aaddddd
-        image=cv2.resize(image, (width, height), interpolation=cv2.INTER_LINEAR)
+        if(resizeState):
+            image=cv2.resize(image, (width, height), interpolation=cv2.INTER_LINEAR)
         ####adddd
         # print(image.shape)
         imgpath = basename(imgpath)
@@ -188,11 +192,11 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainGender.lmdb')
-    parser.add_argument('--imgSizeW', type=int, default=140)
-    parser.add_argument('--imgSizeH', type=int, default=140)
-    parser.add_argument('--picPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train1')
+    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainAug.lmdb')
+    parser.add_argument('--imgSizeW', type=int, default=128)
+    parser.add_argument('--imgSizeH', type=int, default=128)
+    parser.add_argument('--picPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train_aug')
     parser.add_argument('--mapSize', type=float, default=10)
     opt = parser.parse_args()
     print (opt)
-    folder2lmdb(opt.picPath,opt.imgSizeW,opt.imgSizeH,lmdbPath=opt.lmdbPath,mapeSize=opt.mapSize)
+    folder2lmdb(opt.picPath,opt.imgSizeW,opt.imgSizeH,lmdbPath=opt.lmdbPath,mapeSize=opt.mapSize,resizeState=False)

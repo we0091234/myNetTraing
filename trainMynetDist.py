@@ -184,7 +184,7 @@ mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
 transform_train=cvTransforms.Compose([
 	# cvTransforms.Resize((140,140)),
-	cvTransforms.RandomCrop((128,128)),
+	# cvTransforms.RandomCrop((128,128)),
 	cvTransforms.RandomHorizontalFlip(), #镜像
 	cvTransforms.ToTensorNoDiv(), #caffe中训练没有除以255所以 不除以255
 	cvTransforms.NormalizeCaffe(mean)  #caffe只用减去均值
@@ -248,12 +248,12 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdb/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdbAug/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
 		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
-	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainGender.lmdb", transform=transform_train)
+	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainAug.lmdb", transform=transform_train)
 	# trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train', transform=transform_train,loader=cv_imread)
 	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
 	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0', transform=transform_val,loader=cv_imread)

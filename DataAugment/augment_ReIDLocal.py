@@ -10,12 +10,12 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 NUM_IMG=50
 def main():
-    path=r"/home/lxk/ZHP/data/ReIDData/ReID_lowerAndupper/ReID_upper/YTA"
+    path=r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train1/1"
     # path=r"/home/lxk/ZHP/data/ReIDData_Aug/YT3"  #使用绝对路径
-    save_path=r'/home/data_ssd/ZHP/ReID_upper/YTA'
+    save_path=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train_aug/1'
     flag=0
-    width = 96
-    height =96
+    width = 128
+    height =128
     for roof, d, filelist in os.walk(path):
         if not d and  filelist:
             num = len(filelist)
@@ -44,8 +44,10 @@ def main():
                 p1.sample(num_of_samples,multi_threaded=True)
             else:
                 p=Augmentor.Pipeline(roof,new_path)
+                p.crop_random(probability=0.5, percentage_area=0.9)
                 p.resize(probability=1, width=width, height=height, resample_filter="BICUBIC")
-                p.random_erasing(probability=0.4, rectangle_area=0.3)
+               
+                p.random_erasing(probability=0.4, rectangle_area=0.4)
                 # p.flip_left_right(probability=0.5)
                 p.rotate(probability=0.5,max_left_rotation=5,max_right_rotation=5)
                 p.skew_corner(probability=0.5, magnitude=0.1)

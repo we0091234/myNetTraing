@@ -43,9 +43,9 @@ parser=argparse.ArgumentParser()
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 # 'F:\@AttributeMean\@meanFile\pedestrainGlobal.npy'
 parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy')
-parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val')
-parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/genderModelDist2/result')
-parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/genderModelDist2')
+parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0')
+parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdb/result')
+parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdb')
 parser.add_argument('--cfg',type=bool,default=True)
 parser.add_argument('--numclass',type=int,default=2)
 parser.add_argument('--inputSize',type=int,default=128)
