@@ -16,6 +16,9 @@ from torch.utils.data import DataLoader
 import cv2
 from prefetch_generator import BackgroundGenerator
 from img2lmdb import ImageFolderLMDB
+
+import warnings
+warnings.filterwarnings("ignore")
 class DataLoaderX(DataLoader):
 
     def __iter__(self):
@@ -223,7 +226,7 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 		loss.backward()
 		optimizer.step()
 		if opt.local_rank % word_size == 0:
-			if batch_idx%100==0:
+			if batch_idx%10==0:
 				print("train Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
@@ -245,13 +248,13 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/genderLmdbDist/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdb/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
 		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
-	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/train.lmdb", transform=transform_train)
-	# trainset = dset.ImageFolder(r'/home/xiaolei/ramdisk/gender/resizePic', transform=transform_train,loader=cv_imread)
+	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainGender.lmdb", transform=transform_train)
+	# trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train', transform=transform_train,loader=cv_imread)
 	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
 	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0', transform=transform_val,loader=cv_imread)
 	val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
@@ -272,9 +275,9 @@ if __name__ == '__main__':
                                              sampler=val_sampler)     
 	# pretrained = torch.load("./model/result/0.880952_epoth_65_model.pth.tar")
 	# pretrainedDict = pretrained['state_dict']
-
+	num_classes=2
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
-	model = myNet(num_classes=2,cfg=myCfg)
+	model = myNet(num_classes=num_classes,cfg=myCfg)
    
 
 	# model.load_state_dict(pretrainedDict)
@@ -286,7 +289,7 @@ if __name__ == '__main__':
 	# scheduler=StepLR(optimizer,step_size=20)
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(opt.nepoch))
 	# criterion=nn.CrossEntropyLoss()
-	criterion = CrossEntropyLabelSmooth(2)
+	criterion = CrossEntropyLabelSmooth(num_classes)
 	criterion.cuda(opt.local_rank)
 
 	for epoch in range(opt.nepoch):

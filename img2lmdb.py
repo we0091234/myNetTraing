@@ -20,6 +20,7 @@ from torchvision.transforms import transforms
 from torchvision.datasets import ImageFolder
 from torchvision import transforms, datasets
 import cv2
+import cvtorchvision.cvtransforms as cvTransforms
 
 
 class ImageFolderWithPaths(datasets.ImageFolder):
@@ -145,7 +146,7 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
     imgoriSize = cv2.resize(imgori, (width, height), interpolation=cv2.INTER_LINEAR).nbytes
     data_size = imgoriSize * len(dataset)
     ######ddddd
-    data_loader = DataLoader(dataset, num_workers=0, collate_fn=lambda x: x)
+    data_loader = DataLoader(dataset, num_workers=4, collate_fn=lambda x: x)
     lmdb_path =lmdbPath
     isdir = os.path.isdir(lmdb_path)
 
@@ -187,7 +188,7 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/train1.lmdb')
+    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainGender.lmdb')
     parser.add_argument('--imgSizeW', type=int, default=140)
     parser.add_argument('--imgSizeH', type=int, default=140)
     parser.add_argument('--picPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train1')

@@ -19,7 +19,14 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 from myNet import myNet
 import cv2
+from torch.utils.data import DataLoader
 import numpy as np
+from prefetch_generator import BackgroundGenerator
+from img2lmdb import ImageFolderLMDB
+class DataLoaderX(DataLoader):
+    def __iter__(self):
+        return BackgroundGenerator(super().__iter__())
+
 def cv_imread(path):
     img=cv2.imdecode(np.fromfile(path,dtype=np.uint8),-1)
     return img
@@ -183,18 +190,20 @@ def main_worker(local_rank, nprocs, args):
         cvTransforms.ToTensorNoDiv(),
         cvTransforms.NormalizeCaffe(mean),
     ])
-
-    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/oneFolder', transform=transform_train,loader=cv_imread)
+    trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/train.lmdb", transform=transform_train)
+    # trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/oneFolder', transform=transform_train,loader=cv_imread)
 	# print(trainset[0][0])
-    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val/0', transform=transform_val,loader=cv_imread)
+    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0', transform=transform_val,loader=cv_imread)
 
-    train_sampler = torch.utils.data.distributed.DistributedSampler(
-        trainset)
+    train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
     train_loader = torch.utils.data.DataLoader(trainset,
                                                batch_size=args.batch_size,
                                                num_workers=4,
                                                pin_memory=True,
                                                sampler=train_sampler)
+
+    # train_loader =DataLoaderX(trainset,batch_size=args.batch_size,num_workers=4,pin_memory=True,sampler=train_sampler)
+    
     val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
     val_loader = torch.utils.data.DataLoader(valset,
                                              batch_size=args.batch_size,
