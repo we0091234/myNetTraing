@@ -47,7 +47,7 @@ parser.add_argument('-j',
                     metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs',
-                    default=60,
+                    default=120,
                     type=int,
                     metavar='N',
                     help='number of total epochs to run')
@@ -58,7 +58,7 @@ parser.add_argument('--start-epoch',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b',
                     '--batch-size',
-                    default=128,
+                    default=512,
                     type=int,
                     metavar='N',
                     help='mini-batch size (default: 3200), this is the total '
@@ -143,7 +143,7 @@ def main_worker(local_rank, nprocs, args):
     else:
         print("=> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
-        model = myNet(num_classes=3)
+        model = myNet(num_classes=2)
 
     torch.cuda.set_device(local_rank)
     model.cuda(local_rank)
@@ -184,9 +184,9 @@ def main_worker(local_rank, nprocs, args):
         cvTransforms.NormalizeCaffe(mean),
     ])
 
-    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/train1', transform=transform_train,loader=cv_imread)
+    trainset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/oneFolder', transform=transform_train,loader=cv_imread)
 	# print(trainset[0][0])
-    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val,loader=cv_imread)
+    valset = datasets.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val/0', transform=transform_val,loader=cv_imread)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         trainset)
@@ -259,7 +259,7 @@ def main_worker(local_rank, nprocs, args):
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
-        fileName = "/home/xiaolei/train_data/myNetTraing/model/"+"_"+str(acc1)+"_"+str(epoch)+".pth.tar"
+        fileName = "/home/xiaolei/train_data/myNetTraing/modelPath/genderModelDist2/"+"_"+str(acc1)+"_"+str(epoch)+".pth.tar"
         if args.local_rank == 0:
             save_checkpoint(
                 {
@@ -316,9 +316,9 @@ def train(train_loader, model, criterion, optimizer, epoch, local_rank, args):
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
-
-        if i % args.print_freq == 0:
-            progress.display(i)
+        if args.local_rank == 0:
+            if i % args.print_freq == 0:
+                progress.display(i)
 
 
 def validate(val_loader, model, criterion, local_rank, args):
@@ -418,7 +418,7 @@ class ProgressMeter(object):
 
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr * (0.1**(epoch // 20))
+    lr = args.lr * (0.1**(epoch // 40))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 

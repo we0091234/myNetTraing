@@ -158,8 +158,8 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--num_workers',type=int,default=4)
-parser.add_argument('--batchSize',type=int,default=256)
-parser.add_argument('--nepoch',type=int,default=60)
+parser.add_argument('--batchSize',type=int,default=512)
+parser.add_argument('--nepoch',type=int,default=120)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
 opt=parser.parse_args()
@@ -168,7 +168,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=opt.gpu
 device=torch.device("cuda")
 torch.backends.cudnn.benchmark=True
 # MEAN_NPY = r'C:\Train_data\@changpengzhuagnheng\@penzi\vehicle.npy'
-MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy'
+MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy'
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
@@ -215,7 +215,7 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 		loss=criterion(out,label)
 		loss.backward()
 		optimizer.step()
-		if batch_idx%10==0:
+		if batch_idx%100==0:
 			print("Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
@@ -235,15 +235,15 @@ def val(epoch,model,valloader):
 			correct+=predicted.data.eq(label.data).cpu().sum()
 	accuracy=1.0*correct.numpy()/total
 	print("Acc: %f "% ((1.0*correct.numpy())/total))
-	exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/DriverCallLmdb/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+	exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/genderLmdb/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 	# torch.save(model.state_dict(),exModelName)
 	torch.save({'cfg': myCfg, 'state_dict': model.state_dict()}, exModelName)
 
 if __name__ == '__main__':
-	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train.lmdb", transform=transform_train)
+	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/train.lmdb", transform=transform_train)
 	# trainset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train', transform=transform_train,loader=cv_imread)
 	print(trainset[0][0])
-	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/val', transform=transform_val,loader=cv_imread)
+	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0', transform=transform_val,loader=cv_imread)
 	print(len(valset))
 	# trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize, shuffle=True,
 	# 										  num_workers=opt.num_workers)
@@ -251,17 +251,17 @@ if __name__ == '__main__':
 	num_workers=opt.num_workers)
 	# valloader = torch.utils.data.DataLoader(valset, batch_size=opt.batchSize, shuffle=False,
 	# 										num_workers=opt.num_workers)
-	valloader = DataLoaderX(valset, batch_size=opt.batchSize, shuffle=False,num_workers=opt.num_workers)
+	valloader = DataLoaderX(valset, batch_size=128, shuffle=False,num_workers=opt.num_workers)
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
 
 	
-	model = myNet(num_classes=3,cfg=myCfg)
+	model = myNet(num_classes=2,cfg=myCfg)
 	model.cuda()
 	optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
 	# scheduler=StepLR(optimizer,step_size=20)
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(opt.nepoch))
 	# criterion=nn.CrossEntropyLoss()
-	criterion = CrossEntropyLabelSmooth(3)
+	criterion = CrossEntropyLabelSmooth(2)
 	criterion.cuda()
 
 	for epoch in range(opt.nepoch):

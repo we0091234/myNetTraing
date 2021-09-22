@@ -12,7 +12,14 @@ import os
 import argparse
 import time
 from myNet import myNet
+from torch.utils.data import DataLoader
 import cv2
+from prefetch_generator import BackgroundGenerator
+from img2lmdb import ImageFolderLMDB
+class DataLoaderX(DataLoader):
+
+    def __iter__(self):
+        return BackgroundGenerator(super().__iter__())
 # from model.resnet import resnet101
 # from dataset.DogCat import DogCat
 def cv_imread(path):
@@ -151,7 +158,7 @@ class CrossEntropyLabelSmooth(nn.Module):
 parser=argparse.ArgumentParser()
 parser.add_argument('--num_workers',type=int,default=4)
 parser.add_argument('--batchSize',type=int,default=512)
-parser.add_argument('--nepoch',type=int,default=60)
+parser.add_argument('--nepoch',type=int,default=120)
 parser.add_argument('--lr',type=float,default=0.025)
 parser.add_argument('--gpu',type=str,default='0')
 parser.add_argument('--local_rank', default=-1, type=int,
@@ -173,7 +180,7 @@ MEAN_NPY = r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy'
 mean_npy = np.load(MEAN_NPY)
 mean = mean_npy.mean(1).mean(1)
 transform_train=cvTransforms.Compose([
-	cvTransforms.Resize((140,140)),
+	# cvTransforms.Resize((140,140)),
 	cvTransforms.RandomCrop((128,128)),
 	cvTransforms.RandomHorizontalFlip(), #镜像
 	cvTransforms.ToTensorNoDiv(), #caffe中训练没有除以255所以 不除以255
@@ -216,7 +223,7 @@ def train(epoch,scheduler,model,trainloader,criterion,optimizer):
 		loss.backward()
 		optimizer.step()
 		if opt.local_rank % word_size == 0:
-			if batch_idx%10==0:
+			if batch_idx%100==0:
 				print("train Epoch:%d [%d|%d] loss:%f lr:%s" %(epoch,batch_idx,len(trainloader),loss.mean(),scheduler.get_lr()))
 	# exModelName="ckp/epoth_"+str(epoch)+"_model"+".pth"
 	# # torch.save(model.state_dict(),exModelName)
@@ -238,14 +245,15 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-		exModelName = r"/home/xiaolei/train_data/myNetTraing/model/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/genderLmdbDist/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
 		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
 if __name__ == '__main__':
-	trainset = dset.ImageFolder(r'/home/xiaolei/ramdisk/gender/resizePic', transform=transform_train,loader=cv_imread)
+	trainset = ImageFolderLMDB(r"/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/train.lmdb", transform=transform_train)
+	# trainset = dset.ImageFolder(r'/home/xiaolei/ramdisk/gender/resizePic', transform=transform_train,loader=cv_imread)
 	train_sampler = torch.utils.data.distributed.DistributedSampler(trainset)
-	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val', transform=transform_val,loader=cv_imread)
+	valset = dset.ImageFolder(r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0', transform=transform_val,loader=cv_imread)
 	val_sampler = torch.utils.data.distributed.DistributedSampler(valset)
 	# print(len(valset))
 	train_loader = torch.utils.data.DataLoader(trainset,

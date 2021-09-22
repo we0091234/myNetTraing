@@ -44,8 +44,8 @@ parser=argparse.ArgumentParser()
 # 'F:\@AttributeMean\@meanFile\pedestrainGlobal.npy'
 parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy')
 parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/gender/val')
-parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model/result')
-parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/model/')
+parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/genderModelDist2/result')
+parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/genderModelDist2')
 parser.add_argument('--cfg',type=bool,default=True)
 parser.add_argument('--numclass',type=int,default=2)
 parser.add_argument('--inputSize',type=int,default=128)
@@ -69,7 +69,7 @@ opt=parser.parse_args()
 # opt.testfile=r"D:\trainTemp\Driver\Kids\kids_real"
 # opt.testfile=r"F:\NostdAttribute\NS-type\val"
 # opt.testfile=r"F:\Driver\DriverTest\zhangzhou\test"
-# opt.testfile=r"F:\PedestrainHeadAttribute\dataSmoke\val"
+# opt.testfile=r"F:\PedestrainHeadAttribute\dataSmoke\val
 # opt.testfile=r"F:\PedestrainAttribute\test\11"
 # opt.testfile="F:\PedestrainAttribute\yuemingsmall2\smoke"
 # opt.testfile=r"F:\PedestrainAttribute\GetSmallPIcNostd\11_std"
@@ -113,8 +113,8 @@ if not os.path.isfile(opt.modelfile):#not opt.modelfile.endswith("pth.tar"):
                 continue
             # # state_dict=checkPoint['state_dict']
             # model = myNet(num_classes=opt.numclass,cfg=cfg)
-            cfg = checkPoint["cfg"]
-            # cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
+            # cfg = checkPoint["cfg"]
+            cfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
             model = myNet(num_classes=opt.numclass, cfg=cfg)
             model.load_state_dict(checkPoint['state_dict'])
                 # model =resnet50()
