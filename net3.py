@@ -42,12 +42,12 @@ class Category():
 parser=argparse.ArgumentParser()
 # 'G:\driver_shenzhen\@new\VehicleDriverGeneral.npy'
 # 'F:\@AttributeMean\@meanFile\pedestrainGlobal.npy'
-parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/pedestrainGlobal.npy')
-parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/val/0')
-parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdbAug/result')
-parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdbAug')
+parser.add_argument('--meanfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/meanFile/VehicleDriverGeneral.npy')
+parser.add_argument('--testfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/val')
+parser.add_argument('--savefile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/DaliCase/modelVal/result')
+parser.add_argument('--modelfile',type=str,default=r'/home/xiaolei/train_data/myNetTraing/DaliCase/modelVal')
 parser.add_argument('--cfg',type=bool,default=True)
-parser.add_argument('--numclass',type=int,default=2)
+parser.add_argument('--numclass',type=int,default=3)
 parser.add_argument('--inputSize',type=int,default=128)
 parser.add_argument('--isParallel',type=bool,default=False)
 # parser.add_argument('--testfile',type=str,default='')
