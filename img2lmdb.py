@@ -192,11 +192,11 @@ def folder2lmdb(dpath,width,height ,lmdbPath="train", mapeSize=2,write_frequency
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/trainAug.lmdb')
-    parser.add_argument('--imgSizeW', type=int, default=128)
-    parser.add_argument('--imgSizeH', type=int, default=128)
-    parser.add_argument('--picPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/datasets/pedestrain/gender/train_aug')
+    parser.add_argument('--lmdbPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/trainAug.lmdb')
+    parser.add_argument('--imgSizeW', type=int, default=140)
+    parser.add_argument('--imgSizeH', type=int, default=140)
+    parser.add_argument('--picPath', type=str, default=r'/home/xiaolei/train_data/myNetTraing/datasets/driverDall/train')
     parser.add_argument('--mapSize', type=float, default=10)
     opt = parser.parse_args()
     print (opt)
-    folder2lmdb(opt.picPath,opt.imgSizeW,opt.imgSizeH,lmdbPath=opt.lmdbPath,mapeSize=opt.mapSize,resizeState=False)
+    folder2lmdb(opt.picPath,opt.imgSizeW,opt.imgSizeH,lmdbPath=opt.lmdbPath,mapeSize=opt.mapSize,resizeState=True)

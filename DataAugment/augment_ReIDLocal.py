@@ -44,7 +44,7 @@ def main():
                 p1.sample(num_of_samples,multi_threaded=True)
             else:
                 p=Augmentor.Pipeline(roof,new_path)
-                p.crop_random(probability=0.5, percentage_area=0.9)
+                # p.crop_random(probability=0.5, percentage_area=0.9)
                 p.resize(probability=1, width=width, height=height, resample_filter="BICUBIC")
                
                 p.random_erasing(probability=0.4, rectangle_area=0.4)

@@ -11,7 +11,7 @@ import numpy as np
 import os
 import argparse
 import time
-from myNet import myNet
+from myNet import myNet,myResNet18
 from torch.utils.data import DataLoader
 import cv2
 from prefetch_generator import BackgroundGenerator
@@ -248,7 +248,7 @@ def val(epoch,model,valloader):
 	if opt.local_rank % word_size == 0:
 		print("\nValidation Epoch: %d" %epoch)
 		print("Acc: %f "% ((1.0*correct.numpy())/total))
-		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderNewLmdbAug/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
+		exModelName = r"/home/xiaolei/train_data/myNetTraing/modelPath/gender/genderRes18/" +str(format(accuracy,'.6f'))+"_"+"epoth_"+ str(epoch) + "_model" + ".pth.tar"
 		# torch.save(model.state_dict(),exModelName)
 		torch.save({'cfg': myCfg, 'state_dict': model.module.state_dict()}, exModelName,_use_new_zipfile_serialization=False)
 
@@ -277,7 +277,8 @@ if __name__ == '__main__':
 	# pretrainedDict = pretrained['state_dict']
 	num_classes=2
 	myCfg = [32, 'M', 64, 'M', 96, 'M', 128, 'M', 192, 'M', 256]
-	model = myNet(num_classes=num_classes,cfg=myCfg)
+	# model = myNet(num_classes=num_classes,cfg=myCfg)
+	model =myResNet18(num_classes=num_classes)
    
 
 	# model.load_state_dict(pretrainedDict)

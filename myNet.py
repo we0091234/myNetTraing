@@ -3,9 +3,10 @@ import math
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+from torchvision import models
 
 
-__all__ = ['myNet']
+__all__ = ['myNet','myResNet18']
 
 # defaultcfg = {
 #     11 : [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
@@ -51,9 +52,34 @@ class myNet(nn.Module):
         y = self.classifier(x)
         return y
 
+class myResNet18(nn.Module):
+    def __init__(self,num_classes=1000):
+        super(myResNet18,self).__init__()
+        model_ft = models.resnet18(pretrained=True)
+        self.model =model_ft
+        self.model.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1,ceil_mode=True)
+        self.model.averagePool = nn.AvgPool2d((5,5),stride=1,ceil_mode=True)
+        self.cls=nn.Linear(512,num_classes)
+
+    def forward(self,x):
+        x = self.model.conv1(x)
+        x = self.model.bn1(x)
+        x = self.model.relu(x)
+        x = self.model.maxpool(x)
+
+        x = self.model.layer1(x)
+        x = self.model.layer2(x)
+        x = self.model.layer3(x)
+        x = self.model.layer4(x)
+
+        x = self.model.averagePool(x)
+        x = x.view(x.size(0), -1)
+        x = self.cls(x)
+
+        return x
 if __name__ == '__main__':
-    net = myNet()
-    x = Variable(torch.FloatTensor(16, 3, 116, 116))
+    net = myResNet18()
+    x = Variable(torch.FloatTensor(16, 3, 128, 128))
     y = net(x)
     print(y.data.shape)
-    print(net)
+    # print(net)
